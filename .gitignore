@@ -231,3 +231,5 @@ $RECYCLE.BIN/
 *.lnk
 chasejellison_wiki_scraper.sln
 *.pyproj
+
+scraper_env/
