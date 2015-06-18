@@ -229,3 +229,5 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+chasejellison_wiki_scraper.sln
+*.pyproj
