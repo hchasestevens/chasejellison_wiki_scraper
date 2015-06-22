@@ -1,17 +1,42 @@
-from selenium import webdriver
 import collections
+import math
+import json
+import urlparse
+import functools
+
+from selenium import webdriver
+from nltk import word_tokenize
+from nltk.data import path as nltk_path
+from nltk.corpus import stopwords
+from nltk.stem.porter import PorterStemmer
+
+import config
 
 
 BASE_URL = 'http://chasejellison.no-ip.org/index.php/'
 DEBUG = True
+nltk_path.append(config.NLTK_DATA_PATH)
+STEMMER = PorterStemmer()
+STOPWORDS = frozenset(stopwords.words('english')) | frozenset('.,:()&[]?%;')
 
 
-Article = collections.namedtuple('Article', 'path depth html text')
+TEMPLATE = '''
+<html>
+<head>
+</head>
+<body>
+</body>
+</html>
+'''
+
+
+Article = collections.namedtuple('Article', 'path depth title html text')
 
 
 def main():
+    # Scraping
     driver = webdriver.PhantomJS('bin/phantomjs.exe')
-    frontier = ['Category:South_Berwick_Families']
+    frontier = {'Chase-Jellison_Homestead'}
     visited = set()
     articles = []
     max_depth = 3
@@ -20,6 +45,33 @@ def main():
         frontier, visited, new_articles = update(driver, frontier, visited, depth)
         articles.extend(new_articles)
 
+    print 'ARTICLES:', len(articles)
+    with open('articles.txt', 'w') as f:
+        for article in articles:
+            f.write(BASE_URL + article.path + '\n')
+
+    # Building search index
+    document_vectors = {
+        article.path: dict(collections.Counter(
+            STEMMER.stem(word) for word in word_tokenize(article.text.lower()) if word not in STOPWORDS
+        ))
+        for article in articles
+    }
+    all_tokens = {token for document in document_vectors.itervalues() for token in document}
+    num_documents = len(document_vectors)
+    idfs = {
+        token: math.log(num_documents / (sum(token in document for document in document_vectors.itervalues()) + 1.))
+        for token in all_tokens
+    }
+    
+    with open('vectors.js', 'w') as f:
+        f.write('var vectors = ' + json.dumps(document_vectors))
+
+    with open('idfs.js', 'w') as f:
+        f.write('var idfs = ' + json.dumps(idfs))
+
+    import pdb
+    pdb.set_trace()
 
 
 def update(driver, old_frontier, visited, depth):
@@ -30,7 +82,7 @@ def update(driver, old_frontier, visited, depth):
     for i, page in enumerate(old_frontier):
         driver.get(BASE_URL + page)
         content = get_content(driver)
-        article = Article(page, depth, get_html(content), get_text(content))
+        article = Article(page, depth, get_title(content), get_html(content), get_text(content))
         
         visited.add(page)
         articles.append(article)
@@ -39,11 +91,15 @@ def update(driver, old_frontier, visited, depth):
         if DEBUG:
             print '\t', len(new_frontier)
 
-    return new_frontier, visited, articles
+    return new_frontier - visited, visited, articles
 
 
 def get_content(driver):
     return driver.find_element_by_xpath(".//div[@id='content']")
+
+
+def get_title(content):
+    return content.find_element_by_xpath(".//h1").text
 
 
 def get_html(content):
@@ -59,15 +115,42 @@ def get_text(content):
 
 def get_links(content, visited):
     links = (
-        link.get_attribute('href').split('/')[-1]
+        get_path(link.get_attribute('href'))
         for link in
-        content.find_elements_by_xpath(".//a[contains(@href, 'index.php/')]")
+        content.find_elements_by_xpath(".//a[contains(@href, 'index.php/') or contains(@href, 'index.php?title=Category:')]")
     )
-    return {
+    links = {
         link for link in links
         if link not in visited
         and 'File:' not in link
+        and 'Special:' not in link
     }
+    category_links = (  # Because often these are "red" but wanted
+        urlparse.parse_qs(urlparse.urlparse(link.get_attribute('href')).query)['title'][0]
+        for link in
+        content.find_elements_by_xpath(".//a[contains(@href, 'index.php?title=Category:')]")
+    )
+    links |= {link for link in category_links if link not in visited}
+    return links
+
+
+def record_mappings(f):
+    mapping_dict = {}
+    @functools.wraps(f)
+    def wrapper(arg):
+        result = f(arg)
+        mapping_dict[arg] = result
+        return result
+    wrapper.mapping_dict = mapping_dict
+    return wrapper
+
+
+@record_mappings
+def get_path(href):
+    parsed_href = urlparse.urlparse(href)
+    if '?' in href:
+        return urlparse.parse_qs(parsed_href.query)['title'][0]
+    return parsed_href.path.split('/')[-1]
 
 
 
