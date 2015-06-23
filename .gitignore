@@ -234,3 +234,4 @@ chasejellison_wiki_scraper.sln
 
 scraper_env/
 config.py
+rendered/
