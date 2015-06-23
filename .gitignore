@@ -236,3 +236,4 @@ scraper_env/
 config.py
 rendered/*.shtml
 rendered/*.js
+*.pyc
