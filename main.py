@@ -111,7 +111,7 @@ def main():
         document_vectors.iteritems()
     }
     
-    with open('vectors.js', 'w') as f:
+    with open('rendered\\vectors.js', 'w') as f:
         f.write('var vectors = ' + json.dumps(document_vectors))
 
     # Rendering static pages
