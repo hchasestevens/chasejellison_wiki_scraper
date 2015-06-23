@@ -1,0 +1,39 @@
+
+<!doctype html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>
+			Unavailable Page - The Chase-Jellison Homestead
+		</title>
+		<link href="/style.css" rel="stylesheet" media="screen">
+        <link href="./style.css" rel="stylesheet" media="screen">
+		<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js"></script>
+		<script type="text/javascript" src="jquery.cycle.all.js"></script>
+	</head>
+	<body>
+		<header>
+			<!--#include virtual="/header.html"-->
+			<div id="header_image">
+				<div class="slideshow">
+					<img src="/img/header/bw_house_cropped.png" alt="The Chase-Jellison Homestead in winter">
+				</div>
+			</div>
+		</header>
+		<div id="content">
+			<article id="featured" >
+				<h1>Page not available</h1>
+				<p>
+					Unfortunately, the article you have requested is not available online at this time. Please <a href='/contact.shtml'>send us a direct inquiry</a>, and we may be able to assist you in accessing this content.
+				</p>
+			</article>
+		</div>
+        <script type="text/javascript">
+            function highlight_famtree() {
+                $("table strong.selflink").parent().css('background-color', '#b29d8e');
+            }
+            $(document).ready(highlight_famtree);
+        </script>
+		<!--#include virtual="/footer.html"-->
+	</body>
+</html>
