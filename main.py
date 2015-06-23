@@ -22,11 +22,42 @@ STOPWORDS = frozenset(stopwords.words('english')) | frozenset('.,:()&[]?%;')
 
 
 TEMPLATE = '''
+<!doctype html>
 <html>
-<head>
-</head>
-<body>
-</body>
+	<head>
+		<meta charset="UTF-8">
+		<title>
+			{title} - The Chase-Jellison Homestead
+		</title>
+		<link href="/style.css" rel="stylesheet" media="screen">
+        <link href="./style.css" rel="stylesheet" media="screen">
+		<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js"></script>
+		<script type="text/javascript" src="jquery.cycle.all.js"></script>
+	</head>
+	<body>
+		<header>
+			<!--#include virtual="/header.html"-->
+			<div id="header_image">
+				<div class="slideshow">
+					<img src="/img/header/bw_house_cropped.png" alt="The Chase-Jellison Homestead in winter">
+				</div>
+			</div>
+		</header>
+		<div id="content">
+			<article id="featured" >
+				<div id="centered_content">
+					{body}
+				</div>
+			</article>
+		</div>
+        <script type="text/javascript">
+            function highlight_famtree() {{
+                $("table strong.selflink").parent().css('background-color', '#b29d8e');
+            }}
+            $(document).ready(highlight_famtree);
+        </script>
+		<!--#include virtual="/footer.html"-->
+	</body>
 </html>
 '''
 
@@ -59,7 +90,7 @@ def main():
 
     # Building search index
     document_vectors = {
-        article.path: dict(collections.Counter(
+        url(article.path): dict(collections.Counter(
             STEMMER.stem(word) for word in word_tokenize(article.text.lower()) if word not in STOPWORDS
         ))
         for article in articles
@@ -67,15 +98,21 @@ def main():
     all_tokens = {token for document in document_vectors.itervalues() for token in document}
     num_documents = len(document_vectors)
     idfs = {
-        token: math.log(num_documents / (sum(token in document for document in document_vectors.itervalues()) + 1.))
+        token: math.log(num_documents / (sum(token in document for document in document_vectors.itervalues()) + 1.))  # Laplace smoothing to avoid division by zero
         for token in all_tokens
+    }
+    document_vectors = {  # Bake-in IDF value
+        key: {
+            token: value * idfs[token]
+            for token, value in
+            document.iteritems()
+        }
+        for key, document in
+        document_vectors.iteritems()
     }
     
     with open('vectors.js', 'w') as f:
         f.write('var vectors = ' + json.dumps(document_vectors))
-
-    with open('idfs.js', 'w') as f:
-        f.write('var idfs = ' + json.dumps(idfs))
 
     # Rendering static pages
     article_paths = frozenset(article.path for article in articles)
@@ -85,15 +122,26 @@ def main():
             'href="[^"]+"', 
             _render_link,
             article.html
+        ).encode('ascii', 'xmlcharrefreplace')
+        page = TEMPLATE.format(
+            title=article.title,
+            body=fixed_links_html,
         )
-        with open('rendered\\{}.shtml'.format(article.path.replace(':', '_')), 'w') as f:
-            f.write(fixed_links_html.encode('ascii', 'xmlcharrefreplace'))
+        with open('rendered\\{}.shtml'.format(url(article.path)), 'w') as f:
+            f.write(page)
+
+
+def url(path):
+    '''Simple replacement to make categories work'''
+    if path.startswith('http://'):
+        return path
+    return path.replace(':', '_')
 
 
 def render_link(article_paths, match):
     relative_link = make_relative(match.group()[6:-1])
     ext = '.shtml' if relative_link in article_paths else ''
-    return 'href="{}{}"'.format(relative_link, ext).replace(':', '_')
+    return 'href="{}{}"'.format(url(relative_link), ext)
 
 
 def update(driver, old_frontier, visited, depth):
