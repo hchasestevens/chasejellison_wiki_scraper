@@ -11,9 +11,10 @@ from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
 
 import config
+import re
 
 
-BASE_URL = 'http://chasejellison.no-ip.org/index.php/'
+BASE_URL_DOMAIN = urlparse.urlparse(config.BASE_URL).netloc
 DEBUG = True
 nltk_path.append(config.NLTK_DATA_PATH)
 STEMMER = PorterStemmer()
@@ -35,7 +36,13 @@ Article = collections.namedtuple('Article', 'path depth title html text')
 
 def main():
     # Scraping
-    driver = webdriver.PhantomJS('bin/phantomjs.exe')
+    driver = webdriver.PhantomJS(
+        'bin/phantomjs.exe', 
+        service_args=[
+            '--disk-cache=true', 
+            '--max-disk-cache-size=50000'
+        ]
+    )
     frontier = {'Chase-Jellison_Homestead'}
     visited = set()
     articles = []
@@ -48,7 +55,7 @@ def main():
     print 'ARTICLES:', len(articles)
     with open('articles.txt', 'w') as f:
         for article in articles:
-            f.write(BASE_URL + article.path + '\n')
+            f.write(config.BASE_URL + article.path + '\n')
 
     # Building search index
     document_vectors = {
@@ -70,8 +77,23 @@ def main():
     with open('idfs.js', 'w') as f:
         f.write('var idfs = ' + json.dumps(idfs))
 
-    import pdb
-    pdb.set_trace()
+    # Rendering static pages
+    article_paths = frozenset(article.path for article in articles)
+    _render_link = functools.partial(render_link, article_paths)
+    for article in articles:
+        fixed_links_html = re.sub(
+            'href="[^"]+"', 
+            _render_link,
+            article.html
+        )
+        with open('rendered\\{}.shtml'.format(article.path.replace(':', '_')), 'w') as f:
+            f.write(fixed_links_html.encode('ascii', 'xmlcharrefreplace'))
+
+
+def render_link(article_paths, match):
+    relative_link = make_relative(match.group()[6:-1])
+    ext = '.shtml' if relative_link in article_paths else ''
+    return 'href="{}{}"'.format(relative_link, ext).replace(':', '_')
 
 
 def update(driver, old_frontier, visited, depth):
@@ -80,7 +102,7 @@ def update(driver, old_frontier, visited, depth):
     articles = []
     new_frontier = set()
     for i, page in enumerate(old_frontier):
-        driver.get(BASE_URL + page)
+        driver.get(config.BASE_URL + page)
         content = get_content(driver)
         article = Article(page, depth, get_title(content), get_html(content), get_text(content))
         
@@ -115,7 +137,7 @@ def get_text(content):
 
 def get_links(content, visited):
     links = (
-        get_path(link.get_attribute('href'))
+        make_relative(link.get_attribute('href'))
         for link in
         content.find_elements_by_xpath(".//a[contains(@href, 'index.php/') or contains(@href, 'index.php?title=Category:')]")
     )
@@ -134,22 +156,17 @@ def get_links(content, visited):
     return links
 
 
-def record_mappings(f):
-    mapping_dict = {}
-    @functools.wraps(f)
-    def wrapper(arg):
-        result = f(arg)
-        mapping_dict[arg] = result
-        return result
-    wrapper.mapping_dict = mapping_dict
-    return wrapper
-
-
-@record_mappings
-def get_path(href):
+def make_relative(href):
     parsed_href = urlparse.urlparse(href)
+    if parsed_href.netloc not in {BASE_URL_DOMAIN, 'localhost', ''}:
+        return href
     if '?' in href:
-        return urlparse.parse_qs(parsed_href.query)['title'][0]
+        titles = urlparse.parse_qs(parsed_href.query).get('title')
+        if titles:
+            return titles[0]
+        if DEBUG:
+            print href, 'was unparsed.'
+        return href
     return parsed_href.path.split('/')[-1]
 
 
