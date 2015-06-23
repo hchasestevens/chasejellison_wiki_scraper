@@ -1,0 +1,75 @@
+﻿#centered_content {
+    text-indent: 0px !important; 
+    width: 675px !important;
+}
+
+#siteSub {
+    display: none !important;
+}
+
+#jump-to-nav {
+    display: none !important;
+}
+
+div.noarticletext {
+    display: none !important;
+}
+
+.fn {
+    display: none !important;
+}
+
+table.infobox {
+    border-collapse: collapse !important;
+    width: initial !important;
+}
+
+table.infobox tr {
+    border-bottom: 1px solid #94a4b4 !important;
+}
+
+a.image {
+    display: none !important;
+}
+
+#toc {
+    display: none !important;
+}
+
+p + p {
+    display: none !important;
+}
+
+ol.references {
+    max-width: 600px !important;
+    word-wrap: break-word !important;
+}
+
+div.printfooter {
+    display: none !important;
+}
+
+#mw-hidden-catlinks {
+    display: none !important;
+}
+
+blockquote.toccolours {
+    font-style: initial !important;
+    text-align: initial !important;
+    background: initial !important;
+}
+
+/*Family trees*/
+table[cellspacing='0'] { 
+    zoom: 0.6 !important;
+}
+
+/*
+table strong.selflink {
+    background-color: #b29d8e !important;
+    display: block !important;
+    width: 102% !important;
+    height: 100% !important;
+    margin-left: -2px !important;
+}
+*/
