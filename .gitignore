@@ -237,3 +237,4 @@ config.py
 rendered/*.shtml
 rendered/*.js
 *.pyc
+articles.txt
