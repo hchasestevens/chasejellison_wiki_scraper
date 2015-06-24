@@ -1,0 +1,150 @@
+﻿
+
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>
+        Search articles - The Chase-Jellison Homestead
+    </title>
+    <link href="/style.css" rel="stylesheet" media="screen">
+    <link href="./style.css" rel="stylesheet" media="screen">
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js"></script>
+    <script type="text/javascript" src="vectors.js"></script>
+    <script type="text/javascript" src="PorterStemmer1980.min.js"></script>
+</head>
+<body>
+    <header>
+        <div id="titlebar">
+            <img src="/img/logo.png" alt="The Chase-Jellison Homestead" id="logo">
+            <section id="titlebar_links" style="display:none;">
+                <ul>
+                    <li>
+                        <a href="#">Join our mailing list</a>
+                    </li>
+                    <li>
+                        <a href="#">Hours and admission</a>
+                    </li>
+                    <li>
+                        <a href="#">Browse articles</a>
+                    </li>
+                </ul>
+            </section>
+            <form style="display:none;" action="/articles/search.html">
+                <input id="searchbar" type="search" placeholder="Search" name="query">
+            </form>
+            <nav>
+                <ul>
+                    <li>
+                        <a href="/index.shtml">
+                            Home
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/about.shtml">
+                            About Us
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/homestead.shtml">
+                            The Homestead
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/people.shtml">
+                            People
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/contact.shtml">
+                            Contact Us
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        <script type="text/javascript">
+            // Deactivate nav link for page we're already on
+            function anchor_navlinks() {
+                $('#titlebar > nav a').map(function () {
+                    if (this.href == window.location.href) {
+                        this.href = '#';
+                    }
+                    console.log(this.href);
+                })
+            }
+            $(document).ready(anchor_navlinks);
+        </script>
+        <div id="header_image">
+            <div class="slideshow">
+                <img src="/img/header/bw_house_cropped.png" alt="The Chase-Jellison Homestead in winter">
+            </div>
+        </div>
+    </header>
+    <div id="content">
+        <article id="featured">
+            <h1 id="title"></h1>
+            <div style="margin-left:20px; margin-right:20px;">
+                <ol id="search_results"></ol>
+            </div>
+        </article>
+    </div>
+    <script type="text/javascript">
+        function getUrlParameter(sParam) {
+            var sPageURL = window.location.search.substring(1);
+            var sURLVariables = sPageURL.split('&');
+            for (var i = 0; i < sURLVariables.length; i++) {
+                var sParameterName = sURLVariables[i].split('=');
+                if (sParameterName[0] == sParam) {
+                    return sParameterName[1];
+                }
+            }
+        }
+        function populate_search() {
+            var query = decodeURIComponent(getUrlParameter("query")).split(" ").map(
+                function (token) {
+                    return stemmer(token.toLowerCase());
+                }
+            );
+            $("#title").append("Search results for: " + decodeURIComponent(getUrlParameter("query")));
+            var articles = Object.keys(vectors);
+            var article_scores = articles.map(
+                function (article) {
+                    var article_vector = vectors[article];
+                    var score = 0;
+                    for (var i = 0; i < query.length; i++) {
+                        var token = query[i];
+                        if (token in article_vector) {
+                            score += article_vector[token];
+                        }
+                    }
+                    return { name: article, score: score };
+                }
+            );
+            article_scores.sort(
+                function (obj1, obj2) {
+                    return obj2.score - obj1.score;  // should be by score desc
+                }
+            );
+            for (var i = 0; i < 10; i++) {
+                article_name = article_scores[i].name;
+                $("#search_results").append(
+                    $("<li>").append(
+                        $("<a>").attr('href', article_name + '.shtml').append(
+                            article_name.split('_').join(" ")
+                        )
+                    )
+                );
+            }
+        }
+        $(document).ready(populate_search);
+    </script>
+    <footer>
+        <small>
+            The Chase-Jellison Homestead | 285 Emery's Bridge Road | South Berwick, ME 03908<br>
+            &copy; 2012 The Chase-Jellison Homestead. All rights reserved. <br>
+            Site by <a href="http://www.chasestevens.com/">Chase Stevens</a>.
+        </small>
+    </footer>
+</body>
+</html>
