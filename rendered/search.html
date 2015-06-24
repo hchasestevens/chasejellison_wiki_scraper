@@ -30,7 +30,7 @@
                     </li>
                 </ul>
             </section>
-            <form style="display:none;" action="/articles/search.html">
+            <form action="/articles/search.html">
                 <input id="searchbar" type="search" placeholder="Search" name="query">
             </form>
             <nav>
@@ -101,12 +101,12 @@
             }
         }
         function populate_search() {
-            var query = decodeURIComponent(getUrlParameter("query")).split(" ").map(
+            var query = decodeURIComponent(getUrlParameter("query")).split("+").map(
                 function (token) {
                     return stemmer(token.toLowerCase());
                 }
             );
-            $("#title").append("Search results for: " + decodeURIComponent(getUrlParameter("query")));
+            $("#title").append("Search results for: " + decodeURIComponent(getUrlParameter("query")).split('+').join(" "));
             var articles = Object.keys(vectors);
             var article_scores = articles.map(
                 function (article) {
@@ -127,14 +127,16 @@
                 }
             );
             for (var i = 0; i < 10; i++) {
-                article_name = article_scores[i].name;
-                $("#search_results").append(
-                    $("<li>").append(
-                        $("<a>").attr('href', article_name + '.shtml').append(
-                            article_name.split('_').join(" ")
+                if (article_scores[i].score > 0.01) {
+                    article_name = article_scores[i].name;
+                    $("#search_results").append(
+                        $("<li>").append(
+                            $("<a>").attr('href', article_name + '.shtml').append(
+                                article_name.split('_').join(" ").split('Category ').join('Category: ')
+                            )
                         )
-                    )
-                );
+                    );
+                }
             }
         }
         $(document).ready(populate_search);
