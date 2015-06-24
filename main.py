@@ -3,15 +3,17 @@ import math
 import json
 import urlparse
 import functools
+import config
+import re
+import ftplib
+import os
+import operator
 
 from selenium import webdriver
 from nltk import word_tokenize
 from nltk.data import path as nltk_path
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
-
-import config
-import re
 
 
 BASE_URL_DOMAIN = urlparse.urlparse(config.BASE_URL).netloc
@@ -129,6 +131,25 @@ def main():
         )
         with open('rendered\\{}.shtml'.format(url(article.path)), 'w') as f:
             f.write(page)
+    
+    article_links = (
+        '<li><a href="{}.shtml">{}</a></li>'.format(url(article.path), article.title)
+        for article in sorted(articles, key=operator.attrgetter('title'))
+    )
+    index = TEMPLATE.format(title='Browse articles', body='<h1>Browse articles</h1><ul>{}</ul>'.format('\n'.join(article_links)))
+    with open('rendered\\index.shtml', 'w') as f:
+        f.write(index)
+
+    # Upload to server
+    ftp = ftplib.FTP(config.FTP_SERVER)
+    ftp.login(config.FTP_USERNAME, config.FTP_PASSWORD)
+    ftp.cwd(config.FTP_TARGET_DIR)
+
+    os.chdir('rendered')
+    for fname in os.listdir(os.getcwd()):
+        print 'Uploading:', fname
+        with open(fname, 'rb') as f:
+            ftp.storbinary('STOR {}'.format(fname), f)
 
 
 def url(path):
