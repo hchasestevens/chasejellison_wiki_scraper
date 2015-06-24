@@ -3,7 +3,6 @@ import math
 import json
 import urlparse
 import functools
-import config
 import re
 import ftplib
 import os
@@ -14,6 +13,8 @@ from nltk import word_tokenize
 from nltk.data import path as nltk_path
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
+
+import config
 
 
 BASE_URL_DOMAIN = urlparse.urlparse(config.BASE_URL).netloc
