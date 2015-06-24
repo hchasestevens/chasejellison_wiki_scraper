@@ -52,7 +52,7 @@ TEMPLATE = '''
 		</div>
         <script type="text/javascript">
             function highlight_famtree() {{
-                $("table strong.selflink").parent().css('background-color', '#b29d8e');
+                $("table strong.selflink").parent().css('background-color', '#93b0cd');
             }}
             $(document).ready(highlight_famtree);
         </script>
