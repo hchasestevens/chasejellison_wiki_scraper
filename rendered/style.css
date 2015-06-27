@@ -44,6 +44,12 @@ p + p {
     display: none !important;
 }
 
+br + p { /*Gravestones*/
+    margin-left: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
 ol.references {
     max-width: 600px !important;
     word-wrap: break-word !important;
