@@ -148,9 +148,12 @@
                     return obj2.score - obj1.score;  // should be by score desc
                 }
             );
-            for (var i = 0; i < 10; i++) {
-                if (article_scores[i].score > 0.01) {
-                    article_name = article_scores[i].name;
+            var max_articles = 10;
+            for (var i = 0; i < max_articles; i++) {
+                var article_name = article_scores[i].name;
+                var hcard = article_name.indexOf('hCards') != -1;
+                if (hcard) { max_articles++; }
+                if (article_scores[i].score > 0.01 && !hcard) {
                     $("#search_results").append(
                         $("<li>").append(
                             $("<a>").attr('href', article_name + '.shtml').append(
