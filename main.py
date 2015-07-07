@@ -127,10 +127,10 @@ def main():
         fixed_links_html = re.sub(
             'href="[^"]+"', 
             _render_link,
-            article.html
+            article.html.replace('<span dir="auto">Category:', '<span dir="auto">Category: ')
         ).encode('ascii', 'xmlcharrefreplace')
         page = TEMPLATE.format(
-            title=article.title,
+            title=article.title.replace('Category:', 'Category: '),
             body=fixed_links_html,
         )
         with open('rendered\\{}.shtml'.format(url(article.path)), 'w') as f:
@@ -138,8 +138,9 @@ def main():
         local_hashes[url(article.path) + '.shtml'] = md5.md5(page).hexdigest()
     
     article_links = (
-        '<li><a href="{}.shtml">{}</a></li>'.format(url(article.path), article.title)
+        '<li><a href="{}.shtml">{}</a></li>'.format(url(article.path), article.title.replace('Category:', 'Category: '))
         for article in sorted(articles, key=operator.attrgetter('title'))
+        if article.title != 'Category:Articles with hCards'
     )
     index = TEMPLATE.format(title='Browse articles', body='<h1>Browse articles</h1><ul>{}</ul>'.format('\n'.join(article_links)))
     with open('rendered\\index.shtml', 'w') as f:
