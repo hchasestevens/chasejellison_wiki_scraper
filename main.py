@@ -7,6 +7,7 @@ import re
 import ftplib
 import os
 import operator
+import md5
 
 from selenium import webdriver
 from nltk import word_tokenize
@@ -121,6 +122,7 @@ def main():
     # Rendering static pages
     article_paths = frozenset(article.path for article in articles)
     _render_link = functools.partial(render_link, article_paths)
+    local_hashes = {}
     for article in articles:
         fixed_links_html = re.sub(
             'href="[^"]+"', 
@@ -133,6 +135,7 @@ def main():
         )
         with open('rendered\\{}.shtml'.format(url(article.path)), 'w') as f:
             f.write(page)
+        local_hashes[url(article.path) + '.shtml'] = md5.md5(page).hexdigest()
     
     article_links = (
         '<li><a href="{}.shtml">{}</a></li>'.format(url(article.path), article.title)
@@ -147,11 +150,36 @@ def main():
     ftp.login(config.FTP_USERNAME, config.FTP_PASSWORD)
     ftp.cwd(config.FTP_TARGET_DIR)
 
+    hashfile_chunks = list()
+    server_hashes = {}
+    try:
+        ftp.retrbinary('RETR hashes.json', hashfile_chunks.append)
+        server_hashes = json.loads(''.join(hashfile_chunks))
+    except ftplib.error_perm:
+        print "Warning: hashes.json not found"
+    except ValueError:
+        print "Warning: hashes.json was not a valid JSON file"
+
     os.chdir('rendered')
     for fname in os.listdir(os.getcwd()):
-        print 'Uploading:', fname
+        if fname == 'hashes.json':
+            continue
+        file_hash = local_hashes.get(fname)
+        if file_hash is None:
+            with open(fname, 'r') as f:
+                file_hash = md5.md5(f.read()).hexdigest()
+                local_hashes[fname] = file_hash
+        if file_hash == server_hashes.get(fname):
+            continue
         with open(fname, 'rb') as f:
+            print 'Uploading:', fname
             ftp.storbinary('STOR {}'.format(fname), f)
+
+    with open('hashes.json', 'w') as f:
+        json.dump(local_hashes, f)
+    with open('hashes.json', 'rb') as f:
+        print 'Uploading: hashes.json'
+        ftp.storbinary('STOR hashes.json', f)
 
 
 def url(path):
