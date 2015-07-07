@@ -238,3 +238,4 @@ rendered/*.shtml
 rendered/*.js
 *.pyc
 articles.txt
+rendered/hashes.json
