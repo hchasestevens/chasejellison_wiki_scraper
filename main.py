@@ -36,6 +36,7 @@ TEMPLATE = '''
         <link href="./style.css" rel="stylesheet" media="screen">
 		<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js"></script>
 		<script type="text/javascript" src="jquery.cycle.all.js"></script>
+        <script type="text/javascript" src="signup_onclick.js"></script>
 	</head>
 	<body>
 		<header>

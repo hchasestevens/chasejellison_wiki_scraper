@@ -11,6 +11,7 @@
     <link href="./style.css" rel="stylesheet" media="screen">
     <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js"></script>
     <script type="text/javascript" src="jquery.cycle.all.js"></script>
+    <script type="text/javascript" src="/signup_onclick.js"></script>
 </head>
 <body>
     <header>
@@ -19,7 +20,25 @@
             <section id="titlebar_links">
                 <ul>
                     <li>
-                        <a href="#">Join our mailing list</a>
+                        <a id="mail_link" href="#" onclick="show_signup_form()">Join our mailing list</a>
+                        <!-- Begin MailChimp Signup Form -->
+                        <div id="mc_embed_signup" style="display:none">
+                            <form action="http://chasejellison.us11.list-manage.com/subscribe/post?u=7adc5a6968eaada3725961d15&amp;id=3693d4a98f" method="post" id="mc-embedded-subscribe-form" name="mc-embedded-subscribe-form" class="validate" target="_blank" onsubmit="hide_signup_form()" novalidate>
+                                <div id="mc_embed_signup_scroll">
+                                    <div class="mc-field-group">
+                                        <label for="mce-EMAIL">Email Address: </label>
+                                        <input type="email" value="" name="EMAIL" class="required email" id="mce-EMAIL">
+                                    </div>
+                                    <div id="mce-responses" class="clear">
+                                        <div class="response" id="mce-error-response" style="display:none"></div>
+                                        <div class="response" id="mce-success-response" style="display:none"></div>
+                                    </div>    <!-- real people should not fill this in and expect good things - do not remove this or risk form bot signups-->
+                                    <div style="position: absolute; left: -5000px;"><input type="text" name="b_7adc5a6968eaada3725961d15_3693d4a98f" tabindex="-1" value=""></div>
+                                    <div class="clear"><input type="submit" value="Subscribe" name="subscribe" id="mc-embedded-subscribe" class="button"></div>
+                                </div>
+                            </form>
+                        </div>
+                        <!--End mc_embed_signup-->
                     </li>
                     <li style="display:none;">
                         <a href="#">Hours and admission</a>
@@ -88,15 +107,21 @@
                     <p>
                         Unfortunately, the article you have requested is not available online at this time. Please <a href='/contact.shtml'>send us a direct inquiry</a>, and we may be able to assist you in accessing this content.
                     </p>
+                    <span><!--Empty to stop dumb css rule--></span>
+                    <p>
+                        Alternatively, you can <a href="/articles/search.html?query=" id="search_link">search for "<span id="search_text"></span></a>" in our knowledge base.
+                    </p>
                 </div>
             </div>
         </article>
     </div>
     <script type="text/javascript">
-        function highlight_famtree() {
-            $("table strong.selflink").parent().css('background-color', '#b29d8e');
+        function populate_search() {
+            var path_tokens = window.location.href.split('/').pop().replace('#', '').split('_');
+            $("#search_link").attr('href', $("#search_link").attr('href') + path_tokens.join('+'));
+            $("#search_text").text(path_tokens.join(' '));
         }
-        $(document).ready(highlight_famtree);
+        $(document).ready(populate_search);
     </script>
     <footer>
         <small>
