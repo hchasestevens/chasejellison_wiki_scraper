@@ -8,6 +8,7 @@ import ftplib
 import os
 import operator
 import md5
+import urllib2
 
 from selenium import webdriver
 from nltk import word_tokenize
@@ -23,6 +24,10 @@ DEBUG = True
 nltk_path.append(config.NLTK_DATA_PATH)
 STEMMER = PorterStemmer()
 STOPWORDS = frozenset(stopwords.words('english')) | frozenset('.,:()&[]?%;')
+
+DISALLOWED_ARTICLE_PATHS = frozenset((
+    'Category_Articles_with_hCards', 'Category_Biography_with_signature',
+))
 
 
 TEMPLATE = '''
@@ -59,7 +64,12 @@ TEMPLATE = '''
             function highlight_famtree() {{
                 $("table strong.selflink").parent().css('background-color', '#93b0cd');
             }}
+            function move_image() {{
+                $("td:only-child a.image").detach().prependTo("#mw-content-text");
+                $("td:not(:has(*))[colspan]").detach();
+            }}
             $(document).ready(highlight_famtree);
+            $(document).ready(move_image);
         </script>
 		<!--#include virtual="/footer.html"-->
 	</body>
@@ -82,11 +92,13 @@ def main():
     frontier = {'Chase-Jellison_Homestead'}
     visited = set()
     articles = []
+    image_urls = set()
     max_depth = 3
 
     for depth in xrange(max_depth):
-        frontier, visited, new_articles = update(driver, frontier, visited, depth)
+        frontier, visited, new_articles, new_images = update(driver, frontier, visited, depth)
         articles.extend(new_articles)
+        image_urls |= new_images
 
     print 'ARTICLES:', len(articles)
     with open('articles.txt', 'w') as f:
@@ -114,6 +126,7 @@ def main():
         }
         for key, document in
         document_vectors.iteritems()
+        if key not in DISALLOWED_ARTICLE_PATHS  # exclude these from index
     }
     
     with open('rendered\\vectors.js', 'w') as f:
@@ -129,9 +142,19 @@ def main():
             _render_link,
             article.html.replace('<span dir="auto">Category:', '<span dir="auto">Category: ')
         ).encode('ascii', 'xmlcharrefreplace')
+        fixed_imlinks_html = re.sub(
+            'href="[^"]+\.(png|JPG)"',
+            '',
+            fixed_links_html,
+        )
+        fixed_imsrcs_html = re.sub(
+            'src="/images[^"]+\.(png|JPG)"',
+            render_image,
+            fixed_imlinks_html
+        )
         page = TEMPLATE.format(
             title=article.title.replace('Category:', 'Category: '),
-            body=fixed_links_html,
+            body=fixed_imsrcs_html,
         )
         with open('rendered\\{}.shtml'.format(url(article.path)), 'w') as f:
             f.write(page)
@@ -140,13 +163,14 @@ def main():
     article_links = (
         '<li><a href="{}.shtml">{}</a></li>'.format(url(article.path), article.title.replace('Category:', 'Category: '))
         for article in sorted(articles, key=operator.attrgetter('title'))
-        if article.title != 'Category:Articles with hCards'
+        if url(article.path) not in DISALLOWED_ARTICLE_PATHS
     )
     index = TEMPLATE.format(title='Browse articles', body='<h1>Browse articles</h1><ul>{}</ul>'.format('\n'.join(article_links)))
     with open('rendered\\index.shtml', 'w') as f:
         f.write(index)
 
-    # Upload to server
+    # Upload articles to server
+    print "Connecting to FTP server"
     ftp = ftplib.FTP(config.FTP_SERVER)
     ftp.login(config.FTP_USERNAME, config.FTP_PASSWORD)
     ftp.cwd(config.FTP_TARGET_DIR)
@@ -154,6 +178,7 @@ def main():
     hashfile_chunks = list()
     server_hashes = {}
     try:
+        print "Downloading: hashes.json"
         ftp.retrbinary('RETR hashes.json', hashfile_chunks.append)
         server_hashes = json.loads(''.join(hashfile_chunks))
     except ftplib.error_perm:
@@ -182,6 +207,18 @@ def main():
         print 'Uploading: hashes.json'
         ftp.storbinary('STOR hashes.json', f)
 
+    # Upload images to server
+    ftp.cwd(config.FTP_TARGET_IMG_DIR)
+    existing_images = frozenset(ftp.nlst())
+    for image_url in image_urls:
+        fname = make_relative(image_url)
+        if fname in existing_images:
+            # assume images are static
+            continue
+        image = urllib2.urlopen(image_url)
+        print 'Transferring image:', fname
+        ftp.storbinary('STOR {}'.format(fname), image)
+
 
 def url(path):
     '''Simple replacement to make categories work'''
@@ -196,11 +233,16 @@ def render_link(article_paths, match):
     return 'href="{}{}"'.format(url(relative_link), ext)
 
 
+def render_image(match):
+    return 'src="/img/articles/{}"'.format(make_relative(match.group()[6:-1]))
+
+
 def update(driver, old_frontier, visited, depth):
     if DEBUG:
         print depth, len(old_frontier)
     articles = []
     new_frontier = set()
+    images = set()
     for i, page in enumerate(old_frontier):
         driver.get(config.BASE_URL + page)
         content = get_content(driver)
@@ -209,11 +251,12 @@ def update(driver, old_frontier, visited, depth):
         visited.add(page)
         articles.append(article)
         new_frontier |= get_links(content, visited)
+        images |= get_images(content)
 
         if DEBUG:
             print '\t', len(new_frontier)
 
-    return new_frontier - visited, visited, articles
+    return new_frontier - visited, visited, articles, images
 
 
 def get_content(driver):
@@ -254,6 +297,14 @@ def get_links(content, visited):
     )
     links |= {link for link in category_links if link not in visited}
     return links
+
+
+def get_images(content):
+    return {
+        image.get_attribute('src')
+        for image in 
+        content.find_elements_by_xpath(".//a[@class='image']/img")
+    }
 
 
 def make_relative(href):

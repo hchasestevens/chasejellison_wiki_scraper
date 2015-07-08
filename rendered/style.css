@@ -25,15 +25,24 @@ div.noarticletext {
 
 table.infobox {
     border-collapse: collapse !important;
-    width: initial !important;
+    width: calc(100% - 206px) !important;
 }
 
 table.infobox tr {
     border-bottom: 1px solid #94a4b4 !important;
 }
 
-a.image {
-    display: none !important;
+#mw-content-text > a.image img {
+    float: right !important;
+    margin-left: 25px !important;
+    margin-bottom: 5px !important;
+}
+
+td a.image img {
+    margin-left: initial !important;
+    float: initial !important;
+    background-color: rgba(235, 230, 226, 1) !important;
+    padding: 3px !important;
 }
 
 #toc {
