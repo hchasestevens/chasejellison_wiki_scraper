@@ -175,6 +175,7 @@ def main():
     index = TEMPLATE.format(title='Browse articles', body='<h1>Browse articles</h1><ul>{}</ul>'.format('\n'.join(article_links)))
     with open('rendered\\index.shtml', 'w') as f:
         f.write(index)
+    local_hashes['index.shtml'] = md5.md5(index).hexdigest()
 
     # Upload articles to server
     print "Connecting to FTP server"
@@ -199,6 +200,8 @@ def main():
             continue
         file_hash = local_hashes.get(fname)
         if file_hash is None:
+            if fname.endswith('.shtml'):
+                continue  # No longer current - prior scrape leftover
             with open(fname, 'r') as f:
                 file_hash = md5.md5(f.read()).hexdigest()
                 local_hashes[fname] = file_hash
@@ -210,9 +213,10 @@ def main():
 
     with open('hashes.json', 'w') as f:
         json.dump(local_hashes, f)
-    with open('hashes.json', 'rb') as f:
-        print '\tUploading: hashes.json'
-        ftp.storbinary('STOR hashes.json', f)
+    if local_hashes != server_hashes:
+        with open('hashes.json', 'rb') as f:
+            print '\tUploading: hashes.json'
+            ftp.storbinary('STOR hashes.json', f)
 
     # Upload images to server
     ftp.cwd(config.FTP_TARGET_IMG_DIR)
@@ -324,7 +328,6 @@ def make_relative(href):
             return titles[0]
         return href
     return parsed_href.path.split('/')[-1]
-
 
 
 if __name__ == '__main__':
