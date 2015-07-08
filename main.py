@@ -20,7 +20,6 @@ import config
 
 
 BASE_URL_DOMAIN = urlparse.urlparse(config.BASE_URL).netloc
-DEBUG = True
 nltk_path.append(config.NLTK_DATA_PATH)
 STEMMER = PorterStemmer()
 STOPWORDS = frozenset(stopwords.words('english')) | frozenset('.,:()&[]?%;')
@@ -100,7 +99,6 @@ def main():
         articles.extend(new_articles)
         image_urls |= new_images
 
-    print 'ARTICLES:', len(articles)
     with open('articles.txt', 'w') as f:
         for article in articles:
             f.write(config.BASE_URL + article.path + '\n')
@@ -178,13 +176,13 @@ def main():
     hashfile_chunks = list()
     server_hashes = {}
     try:
-        print "Downloading: hashes.json"
+        print "\tDownloading: hashes.json"
         ftp.retrbinary('RETR hashes.json', hashfile_chunks.append)
         server_hashes = json.loads(''.join(hashfile_chunks))
     except ftplib.error_perm:
-        print "Warning: hashes.json not found"
+        print "\t\tWarning: hashes.json not found"
     except ValueError:
-        print "Warning: hashes.json was not a valid JSON file"
+        print "\t\tWarning: hashes.json was not a valid JSON file"
 
     os.chdir('rendered')
     for fname in os.listdir(os.getcwd()):
@@ -198,13 +196,13 @@ def main():
         if file_hash == server_hashes.get(fname):
             continue
         with open(fname, 'rb') as f:
-            print 'Uploading:', fname
+            print '\tUploading:', fname
             ftp.storbinary('STOR {}'.format(fname), f)
 
     with open('hashes.json', 'w') as f:
         json.dump(local_hashes, f)
     with open('hashes.json', 'rb') as f:
-        print 'Uploading: hashes.json'
+        print '\tUploading: hashes.json'
         ftp.storbinary('STOR hashes.json', f)
 
     # Upload images to server
@@ -216,8 +214,10 @@ def main():
             # assume images are static
             continue
         image = urllib2.urlopen(image_url)
-        print 'Transferring image:', fname
+        print '\tTransferring image:', fname
         ftp.storbinary('STOR {}'.format(fname), image)
+
+    print "Finished"
 
 
 def url(path):
@@ -238,12 +238,13 @@ def render_image(match):
 
 
 def update(driver, old_frontier, visited, depth):
-    if DEBUG:
-        print depth, len(old_frontier)
+    print 'Scraping pages within', depth, 'clicks'
     articles = []
     new_frontier = set()
     images = set()
-    for i, page in enumerate(old_frontier):
+    for page in old_frontier:
+        print '\tDownloading:', page
+        
         driver.get(config.BASE_URL + page)
         content = get_content(driver)
         article = Article(page, depth, get_title(content), get_html(content), get_text(content))
@@ -252,9 +253,6 @@ def update(driver, old_frontier, visited, depth):
         articles.append(article)
         new_frontier |= get_links(content, visited)
         images |= get_images(content)
-
-        if DEBUG:
-            print '\t', len(new_frontier)
 
     return new_frontier - visited, visited, articles, images
 
@@ -315,8 +313,6 @@ def make_relative(href):
         titles = urlparse.parse_qs(parsed_href.query).get('title')
         if titles:
             return titles[0]
-        if DEBUG:
-            print href, 'was unparsed.'
         return href
     return parsed_href.path.split('/')[-1]
 
