@@ -104,21 +104,29 @@ def main():
             f.write(config.BASE_URL + article.path + '\n')
 
     # Building search index
+    print "Building search index"
+    k = 2
     document_vectors = {
         url(article.path): dict(collections.Counter(
             STEMMER.stem(word) for word in word_tokenize(article.text.lower()) if word not in STOPWORDS
         ))
         for article in articles
     }
+    document_lengths = {
+        k: sum(v.itervalues())
+        for k, v in
+        document_vectors.iteritems()
+    }
     all_tokens = {token for document in document_vectors.itervalues() for token in document}
-    num_documents = len(document_vectors)
+    num_documents = len(document_vectors) + 1.  # Pretend there's one document with no tokens, so no IDF is 0
+    average_document_length = sum(document_lengths.itervalues()) / (num_documents - 1)
     idfs = {
-        token: math.log(num_documents / (sum(token in document for document in document_vectors.itervalues()) + 1.))  # Laplace smoothing to avoid division by zero
+        token: math.log(num_documents / sum(token in document for document in document_vectors.itervalues()))
         for token in all_tokens
     }
     document_vectors = {  # Bake-in IDF value
         key: {
-            token: value * idfs[token]
+            token: value * idfs[token] / (value + (document_lengths[key] / average_document_length))
             for token, value in
             document.iteritems()
         }
@@ -131,6 +139,7 @@ def main():
         f.write('var vectors = ' + json.dumps(document_vectors))
 
     # Rendering static pages
+    print "Rendering static pages"
     article_paths = frozenset(article.path for article in articles)
     _render_link = functools.partial(render_link, article_paths)
     local_hashes = {}
