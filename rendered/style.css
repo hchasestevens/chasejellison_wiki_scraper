@@ -78,6 +78,10 @@ blockquote.toccolours {
     background: initial !important;
 }
 
+div.redirectMsg img {
+    display: none !important;
+}
+
 /*Family trees*/
 table[cellspacing='0'] { 
     zoom: 0.6 !important;
