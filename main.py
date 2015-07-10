@@ -264,7 +264,7 @@ def main():
         print '\tTransferring image:', fname
         ftp.storbinary('STOR {}'.format(fname), image)
 
-    print "Finished"
+    raw_input("Finished (enter to quit)")
 
 
 def url(path):
