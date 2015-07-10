@@ -239,3 +239,6 @@ rendered/*.js
 *.pyc
 articles.txt
 rendered/hashes.json
+dist/main.exe
+dist/upload_wiki.exe
+phantomjs.exe

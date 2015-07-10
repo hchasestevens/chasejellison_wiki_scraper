@@ -9,6 +9,7 @@ import os
 import operator
 import md5
 import urllib2
+import sys
 
 from selenium import webdriver
 from nltk import word_tokenize
@@ -79,10 +80,27 @@ TEMPLATE = '''
 Article = collections.namedtuple('Article', 'path depth title html text')
 
 
+def resource_path(relative_path):
+    """
+    Get absolute path to resource, works for dev and for PyInstaller
+    (http://stackoverflow.com/questions/19669640/bundling-data-files-with-pyinstaller-2-1-and-meipass-error-onefile)
+    """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
+
 def main():
+    if not os.path.exists('rendered'):
+        os.mkdir('rendered')
+
     # Scraping
     driver = webdriver.PhantomJS(
-        'bin/phantomjs.exe', 
+        resource_path('phantomjs.exe'), 
         service_args=[
             '--disk-cache=true', 
             '--max-disk-cache-size=50000'
