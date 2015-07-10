@@ -20,18 +20,27 @@ from nltk.stem.porter import PorterStemmer
 import config
 
 
-BASE_URL_DOMAIN = urlparse.urlparse(config.BASE_URL).netloc
+# NLTK resource initialization
 nltk_path.append(config.NLTK_DATA_PATH)
-STEMMER = PorterStemmer()
+nltk_to_download = []
 try:
-    STOPWORDS = frozenset(stopwords.words('english')) | frozenset('.,:()&[]?%;')
-except Exception:
-    # Resource not downloaded?
+    stopwords.words('english')
+except LookupError:
+    nltk_to_download.append('stopwords')
+try:
+    word_tokenize('token test')
+except LookupError:
+    nltk_to_download.append('punkt')
+if nltk_to_download:
+    print 'Performing first-time setup'
     from nltk import download as nltk_download
-    print "Performing first-time setup"
-    print "\tDownloading: English stopword corpus"
-    nltk_download('stopwords')
-    STOPWORDS = frozenset(stopwords.words('english')) | frozenset('.,:()&[]?%;')
+    for package in nltk_to_download:
+        print '\tDownloading:', package
+        nltk_download(package)
+STOPWORDS = frozenset(stopwords.words('english')) | frozenset('.,:()&[]?%;')
+STEMMER = PorterStemmer()
+
+BASE_URL_DOMAIN = urlparse.urlparse(config.BASE_URL).netloc
 DISALLOWED_ARTICLE_PATHS = frozenset((
     'Category_Articles_with_hCards', 'Category_Biography_with_signature',
 ))
