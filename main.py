@@ -23,8 +23,15 @@ import config
 BASE_URL_DOMAIN = urlparse.urlparse(config.BASE_URL).netloc
 nltk_path.append(config.NLTK_DATA_PATH)
 STEMMER = PorterStemmer()
-STOPWORDS = frozenset(stopwords.words('english')) | frozenset('.,:()&[]?%;')
-
+try:
+    STOPWORDS = frozenset(stopwords.words('english')) | frozenset('.,:()&[]?%;')
+except Exception:
+    # Resource not downloaded?
+    from nltk import download as nltk_download
+    print "Performing first-time setup"
+    print "\tDownloading: English stopword corpus"
+    nltk_download('stopwords')
+    STOPWORDS = frozenset(stopwords.words('english')) | frozenset('.,:()&[]?%;')
 DISALLOWED_ARTICLE_PATHS = frozenset((
     'Category_Articles_with_hCards', 'Category_Biography_with_signature',
 ))
