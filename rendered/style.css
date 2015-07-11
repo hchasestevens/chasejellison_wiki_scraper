@@ -49,7 +49,7 @@ td a.image img {
     display: none !important;
 }
 
-p + p {
+p + p br {
     display: none !important;
 }
 
