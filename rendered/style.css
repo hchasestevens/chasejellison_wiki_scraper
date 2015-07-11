@@ -82,13 +82,16 @@ div.redirectMsg img {
     display: none !important;
 }
 
+div.reflist {
+    font-size: .75em !important;
+}
+
 /*Family trees*/
 table[cellspacing='0'] { 
     zoom: 0.6 !important;
 }
 
 /*Browse articles page*/
-
 #article_list {
     width: 700px !important;
 }
