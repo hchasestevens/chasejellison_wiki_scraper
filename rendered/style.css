@@ -87,6 +87,19 @@ table[cellspacing='0'] {
     zoom: 0.6 !important;
 }
 
+/*Browse articles page*/
+
+#article_list {
+    width: 700px !important;
+}
+
+#article_list li {
+    width: 200px !important;
+    margin: 0 10px 10px 0 !important;
+    float: left !important;
+    height: 2em !important;
+}
+
 /*
 table strong.selflink {
     background-color: #b29d8e !important;

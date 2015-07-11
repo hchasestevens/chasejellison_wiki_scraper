@@ -206,7 +206,10 @@ def main():
         for article in sorted(articles, key=operator.attrgetter('title'))
         if url(article.path) not in DISALLOWED_ARTICLE_PATHS
     )
-    index = TEMPLATE.format(title='Browse articles', body='<h1>Browse articles</h1><ul>{}</ul>'.format('\n'.join(article_links)))
+    index = TEMPLATE.format(
+        title='Browse articles', 
+        body='<h1>Browse articles</h1><ul id="article_list">{}</ul>'.format('\n'.join(article_links))
+    )
     with open('rendered\\index.shtml', 'w') as f:
         f.write(index)
     local_hashes['index.shtml'] = md5.md5(index).hexdigest()
