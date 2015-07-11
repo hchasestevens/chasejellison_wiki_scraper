@@ -87,6 +87,10 @@ table[cellspacing='0'] {
     zoom: 0.6 !important;
 }
 
+div.reflist {
+    font-size: .75em !important;
+}
+
 /*
 table strong.selflink {
     background-color: #b29d8e !important;
