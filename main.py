@@ -193,9 +193,14 @@ def main():
             render_image,
             fixed_imlinks_html
         )
+        fixed_srcset_html = re.sub(
+            'srcset="[^"]+")',
+            '',
+            fixed_imsrcs_html
+    	)
         page = TEMPLATE.format(
             title=article.title.replace('Category:', 'Category: '),
-            body=fixed_imsrcs_html,
+            body=fixed_srcset_html,
         )
         with open('rendered\\{}.shtml'.format(url(article.path)), 'w') as f:
             f.write(page)
