@@ -194,7 +194,7 @@ def main():
             fixed_imlinks_html
         )
         fixed_srcset_html = re.sub(
-            'srcset="[^"]+")',
+            'srcset="[^"]+"',
             '',
             fixed_imsrcs_html
     	)
