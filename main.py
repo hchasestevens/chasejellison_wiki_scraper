@@ -195,7 +195,7 @@ def main():
         )
         fixed_srcset_html = re.sub(
             'srcset="[^"]+"',
-            '',
+            render_srcset,  # new function to fix these (will also need to be uploaded)
             fixed_imsrcs_html
     	)
         page = TEMPLATE.format(
@@ -265,12 +265,15 @@ def main():
     existing_images = frozenset(ftp.nlst())
     for image_url in image_urls:
         fname = make_relative(image_url)
-        if fname in existing_images:
-            # assume images are static
-            continue
-        image = urllib2.urlopen(image_url)
-        print '\tTransferring image:', fname
-        ftp.storbinary('STOR {}'.format(fname), image)
+        if image_url.startswith('/'):
+            image_url = 'http://{}{}'.format(BASE_URL_DOMAIN, image_url)
+        try:
+            image = urllib2.urlopen(image_url)
+        except:
+            print '\tFailed:', image_url
+        else:
+            print '\tTransferring image:', fname, 'from:', image_url
+            ftp.storbinary('STOR {}'.format(fname), image)
 
     raw_input("Finished (enter to quit)")
 
@@ -290,6 +293,18 @@ def render_link(article_paths, match):
 
 def render_image(match):
     return 'src="/img/articles/{}"'.format(make_relative(match.group()[6:-1]))
+
+
+def srcset_spec(token):
+    return token.endswith('x') or token.endswith('x,')
+
+
+def render_srcset(match):
+    return 'srcset="{}"'.format(' '.join(
+        '/img/articles/{}'.format(make_relative(token)) if not srcset_spec(token) else token
+        for token in 
+        match.group()[:].split()  # todo: determine slice indices
+    ))
 
 
 def update(driver, old_frontier, visited, depth):
@@ -353,11 +368,19 @@ def get_links(content, visited):
 
 
 def get_images(content):
+    image_elems = content.find_elements_by_xpath(".//a[@class='image']/img")
     return {
         image.get_attribute('src')
         for image in 
-        content.find_elements_by_xpath(".//a[@class='image']/img")
-    }
+        image_elems
+    } | {
+        token
+        for image in 
+        image_elems
+        for token in 
+        image.get_attribute('srcset').split()
+        if not srcset_spec(token)
+    }  # extend to include srcset images
 
 
 def make_relative(href):
