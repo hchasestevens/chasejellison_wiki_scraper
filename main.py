@@ -1,4 +1,4 @@
-import collections
+﻿import collections
 import math
 import json
 import urlparse
@@ -184,12 +184,12 @@ def main():
             article.html.replace('<span dir="auto">Category:', '<span dir="auto">Category: ')
         ).encode('ascii', 'xmlcharrefreplace')
         fixed_imlinks_html = re.sub(
-            'href="[^"]+\.(png|JPG)"',
+            'href="[^"]+\.(png|JPG|jpg|PNG)"',
             '',
             fixed_links_html,
         )
         fixed_imsrcs_html = re.sub(
-            'src="/images[^"]+\.(png|JPG)"',
+            'src="/images[^"]+\.(png|JPG|jpg|PNG)"',
             render_image,
             fixed_imlinks_html
         )
@@ -265,14 +265,19 @@ def main():
     existing_images = frozenset(ftp.nlst())
     for image_url in image_urls:
         fname = make_relative(image_url)
+        if fname in existing_images:
+            # assume images are static
+            continue
+
         if image_url.startswith('/'):
             image_url = 'http://{}{}'.format(BASE_URL_DOMAIN, image_url)
+        
         try:
             image = urllib2.urlopen(image_url)
         except:
-            print '\tFailed:', image_url
+            print '\tFailed to download:', image_url
         else:
-            print '\tTransferring image:', fname, 'from:', image_url
+            print '\tTransferring image:', fname
             ftp.storbinary('STOR {}'.format(fname), image)
 
     raw_input("Finished (enter to quit)")
@@ -303,7 +308,7 @@ def render_srcset(match):
     return 'srcset="{}"'.format(' '.join(
         '/img/articles/{}'.format(make_relative(token)) if not srcset_spec(token) else token
         for token in 
-        match.group()[:].split()  # todo: determine slice indices
+        match.group()[9:-1].split()  # todo: determine slice indices
     ))
 
 
